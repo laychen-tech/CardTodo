@@ -1,0 +1,145 @@
+<?xml version="1.0" encoding="utf-8"?>
+<FrameLayout
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:padding="8dp">
+
+    <androidx.cardview.widget.CardView
+        android:id="@+id/card_container_outer"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        app:cardCornerRadius="28dp"
+        app:cardElevation="14dp"
+        app:cardUseCompatPadding="true"
+        app:cardBackgroundColor="?attr/colorSurface">
+
+        <LinearLayout
+            android:id="@+id/card_container"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:orientation="vertical"
+            android:padding="28dp">
+
+            <!-- 顶部：优先级 + 状态图标 -->
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="horizontal"
+                android:gravity="center_vertical">
+
+                <TextView
+                    android:id="@+id/tv_priority"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:textSize="13sp"
+                    android:textColor="?attr/colorOnSurface"
+                    android:alpha="0.7"
+                    android:fontFamily="sans-serif-medium"
+                    android:text="🟡 中优先级" />
+
+                <ImageView
+                    android:id="@+id/iv_status"
+                    android:layout_width="32dp"
+                    android:layout_height="32dp"
+                    android:src="@drawable/ic_circle_outline"
+                    app:tint="?attr/colorPrimary" />
+
+            </LinearLayout>
+
+            <!-- 分割线 -->
+            <View
+                android:layout_width="match_parent"
+                android:layout_height="1dp"
+                android:layout_marginTop="16dp"
+                android:layout_marginBottom="20dp"
+                android:background="?attr/colorOnSurface"
+                android:alpha="0.08" />
+
+            <!-- 弹性空间 -->
+            <View
+                android:layout_width="match_parent"
+                android:layout_height="0dp"
+                android:layout_weight="1" />
+
+            <!-- 任务标题 -->
+            <TextView
+                android:id="@+id/tv_title"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:textSize="28sp"
+                android:textColor="?attr/colorOnSurface"
+                android:textStyle="bold"
+                android:fontFamily="sans-serif-medium"
+                android:maxLines="3"
+                android:ellipsize="end"
+                android:lineSpacingMultiplier="1.15"
+                android:text="Task Title" />
+
+            <!-- 描述 -->
+            <TextView
+                android:id="@+id/tv_description"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="14dp"
+                android:textSize="15sp"
+                android:textColor="?attr/colorOnSurface"
+                android:alpha="0.65"
+                android:maxLines="4"
+                android:ellipsize="end"
+                android:lineSpacingMultiplier="1.4"
+                android:text="Description goes here" />
+
+            <!-- 弹性空间 -->
+            <View
+                android:layout_width="match_parent"
+                android:layout_height="0dp"
+                android:layout_weight="1" />
+
+            <!-- 日期 -->
+            <TextView
+                android:id="@+id/tv_date"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:textSize="12sp"
+                android:textColor="?attr/colorOnSurface"
+                android:alpha="0.45"
+                android:layout_marginBottom="16dp"
+                android:text="Jan 01, 2024" />
+
+            <!-- 操作按钮 -->
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="horizontal"
+                android:gravity="end">
+
+                <com.google.android.material.button.MaterialButton
+                    android:id="@+id/btn_complete"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginEnd="8dp"
+                    android:text="完成"
+                    style="@style/Widget.MaterialComponents.Button.OutlinedButton"
+                    app:strokeColor="?attr/colorPrimary"
+                    app:strokeWidth="1.5dp"
+                    app:cornerRadius="20dp" />
+
+                <com.google.android.material.button.MaterialButton
+                    android:id="@+id/btn_delete"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="删除"
+                    android:textColor="@color/color_error"
+                    style="@style/Widget.MaterialComponents.Button.OutlinedButton"
+                    app:strokeColor="@color/color_error"
+                    app:strokeWidth="1.5dp"
+                    app:cornerRadius="20dp" />
+
+            </LinearLayout>
+        </LinearLayout>
+    </androidx.cardview.widget.CardView>
+
+</FrameLayout>

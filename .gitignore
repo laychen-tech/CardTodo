@@ -1,0 +1,15 @@
+# Gradle
+.gradle/
+build/
+app/build/
+
+# Local
+local.properties
+*.iml
+.idea/
+
+# OS
+.DS_Store
+
+# APK releases — 保留 release 目录
+# (APK 通过 releases/ 目录手动放入)

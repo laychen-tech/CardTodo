@@ -1,0 +1,73 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <color name="color_background_dark">#121218</color>
+    <color name="color_background_light">#F4F5FA</color>
+    <color name="color_error">#E53935</color>
+    <color name="color_error_dark">#FF6B6B</color>
+    <color name="color_on_background_dark">#E4E3F3</color>
+    <color name="color_on_background_light">#1C1B2E</color>
+    <color name="color_on_primary">#FFFFFF</color>
+    <color name="color_on_surface_dark">#E4E3F3</color>
+    <color name="color_on_surface_light">#1C1B2E</color>
+    <color name="color_primary">#5B5FEF</color>
+    <color name="color_primary_container_dark">#2D2F6B</color>
+    <color name="color_primary_container_light">#E8E7FF</color>
+    <color name="color_primary_dark">#7B7FFF</color>
+    <color name="color_secondary_dark">#03DAC5</color>
+    <color name="color_secondary_light">#03DAC5</color>
+    <color name="color_surface_dark">#1E1E2A</color>
+    <color name="color_surface_light">#FFFFFF</color>
+    <color name="gradient_purple_start">#5B5FEF</color>
+    <dimen name="page_margin">16dp</dimen>
+    <dimen name="pager_width">300dp</dimen>
+    <string name="add_task">添加</string>
+    <string name="app_name">CardTodo</string>
+    <string name="cancel">取消</string>
+    <string name="delete">删除</string>
+    <string name="empty_state">✨ 暂无任务\n点击右下角 + 添加第一个任务</string>
+    <string name="hint_description">描述（可选）</string>
+    <string name="hint_title">任务标题 *</string>
+    <string name="mark_complete">完成</string>
+    <string name="undo_complete">撤销</string>
+    <style name="BottomSheetShape" parent="ShapeAppearance.Material3.LargeComponent">
+        <item name="cornerFamily">rounded</item>
+        <item name="cornerSizeTopLeft">24dp</item>
+        <item name="cornerSizeTopRight">24dp</item>
+        <item name="cornerSizeBottomLeft">0dp</item>
+        <item name="cornerSizeBottomRight">0dp</item>
+    </style>
+    <style name="ModalBottomSheetStyle" parent="Widget.Material3.BottomSheet.Modal">
+        <item name="shapeAppearance">@style/BottomSheetShape</item>
+    </style>
+    <style name="Theme.CardTodo" parent="Theme.Material3.Light.NoActionBar">
+        <item name="colorPrimary">@color/color_primary</item>
+        <item name="colorOnPrimary">@color/color_on_primary</item>
+        <item name="colorPrimaryContainer">@color/color_primary_container_light</item>
+        <item name="colorOnPrimaryContainer">@color/color_on_surface_light</item>
+        <item name="colorSecondary">@color/color_secondary_light</item>
+        <item name="colorError">@color/color_error</item>
+        <item name="android:colorBackground">@color/color_background_light</item>
+        <item name="colorOnBackground">@color/color_on_background_light</item>
+        <item name="colorSurface">@color/color_surface_light</item>
+        <item name="colorOnSurface">@color/color_on_surface_light</item>
+        <item name="android:statusBarColor">@android:color/transparent</item>
+        <item name="android:windowLightStatusBar">true</item>
+    </style>
+    <style name="Theme.CardTodo.BottomSheetDialog" parent="Theme.Material3.Light.BottomSheetDialog">
+        <item name="bottomSheetStyle">@style/ModalBottomSheetStyle</item>
+    </style>
+    <style name="Theme.CardTodo.Dark" parent="Theme.Material3.Dark.NoActionBar">
+        <item name="colorPrimary">@color/color_primary_dark</item>
+        <item name="colorOnPrimary">@color/color_on_primary</item>
+        <item name="colorPrimaryContainer">@color/color_primary_container_dark</item>
+        <item name="colorOnPrimaryContainer">@color/color_on_surface_dark</item>
+        <item name="colorSecondary">@color/color_secondary_dark</item>
+        <item name="colorError">@color/color_error_dark</item>
+        <item name="android:colorBackground">@color/color_background_dark</item>
+        <item name="colorOnBackground">@color/color_on_background_dark</item>
+        <item name="colorSurface">@color/color_surface_dark</item>
+        <item name="colorOnSurface">@color/color_on_surface_dark</item>
+        <item name="android:statusBarColor">@android:color/transparent</item>
+        <item name="android:windowLightStatusBar">false</item>
+    </style>
+</resources>

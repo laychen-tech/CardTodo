@@ -1,0 +1,32 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Primary accent -->
+    <color name="color_primary">#5B5FEF</color>
+    <color name="color_primary_dark">#7B7FFF</color>
+    <color name="color_on_primary">#FFFFFF</color>
+    <color name="color_primary_container_light">#E8E7FF</color>
+    <color name="color_primary_container_dark">#2D2F6B</color>
+
+    <!-- Light theme -->
+    <color name="color_background_light">#F4F5FA</color>
+    <color name="color_surface_light">#FFFFFF</color>
+    <color name="color_on_surface_light">#1C1B2E</color>
+    <color name="color_on_background_light">#1C1B2E</color>
+
+    <!-- Dark theme -->
+    <color name="color_background_dark">#121218</color>
+    <color name="color_surface_dark">#1E1E2A</color>
+    <color name="color_on_surface_dark">#E4E3F3</color>
+    <color name="color_on_background_dark">#E4E3F3</color>
+
+    <!-- Error -->
+    <color name="color_error">#E53935</color>
+    <color name="color_error_dark">#FF6B6B</color>
+
+    <!-- Secondary -->
+    <color name="color_secondary_light">#03DAC5</color>
+    <color name="color_secondary_dark">#03DAC5</color>
+
+    <!-- Placeholder, kept for compat -->
+    <color name="gradient_purple_start">#5B5FEF</color>
+</resources>
