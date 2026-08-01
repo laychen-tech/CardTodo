@@ -13,3 +13,4 @@ local.properties
 
 # APK releases — 保留 release 目录
 # (APK 通过 releases/ 目录手动放入)
+releases/cardtodo.keystore
