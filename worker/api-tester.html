@@ -1,0 +1,406 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>CardTodo API Tester</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: system-ui, sans-serif; background: #0f1117; color: #e2e8f0; min-height: 100vh; }
+  header { background: #1a1d2e; border-bottom: 1px solid #2d3148; padding: 16px 24px; display: flex; align-items: center; gap: 12px; }
+  header h1 { font-size: 18px; font-weight: 700; }
+  header span { font-size: 12px; background: #7c3aed; color: #fff; padding: 2px 8px; border-radius: 99px; }
+  .layout { display: grid; grid-template-columns: 340px 1fr; height: calc(100vh - 57px); }
+  .sidebar { background: #13151f; border-right: 1px solid #2d3148; overflow-y: auto; }
+  .main { overflow-y: auto; padding: 20px; }
+
+  /* URL Bar */
+  .url-bar { padding: 16px; border-bottom: 1px solid #2d3148; }
+  .url-bar label { font-size: 11px; color: #94a3b8; text-transform: uppercase; letter-spacing: .05em; display: block; margin-bottom: 6px; }
+  .url-bar input { width: 100%; background: #1e2235; border: 1px solid #3d4266; border-radius: 8px; color: #e2e8f0; padding: 8px 12px; font-size: 13px; outline: none; }
+  .url-bar input:focus { border-color: #7c3aed; }
+
+  /* Endpoint list */
+  .section-title { padding: 12px 16px 6px; font-size: 11px; color: #64748b; text-transform: uppercase; letter-spacing: .06em; }
+  .endpoint { display: flex; align-items: center; gap: 10px; padding: 10px 16px; cursor: pointer; border-left: 3px solid transparent; transition: background .15s; }
+  .endpoint:hover { background: #1e2235; }
+  .endpoint.active { background: #1e2235; border-left-color: #7c3aed; }
+  .method { font-size: 11px; font-weight: 700; width: 46px; text-align: center; padding: 2px 0; border-radius: 4px; flex-shrink: 0; }
+  .GET    { background: #064e3b; color: #34d399; }
+  .POST   { background: #1e3a5f; color: #60a5fa; }
+  .PUT    { background: #3b2100; color: #fb923c; }
+  .DELETE { background: #450a0a; color: #f87171; }
+  .endpoint-name { font-size: 13px; color: #cbd5e1; }
+
+  /* Panel */
+  .panel { background: #13151f; border: 1px solid #2d3148; border-radius: 12px; margin-bottom: 20px; overflow: hidden; }
+  .panel-header { background: #1a1d2e; padding: 14px 18px; display: flex; align-items: center; justify-content: space-between; border-bottom: 1px solid #2d3148; }
+  .panel-title { font-size: 14px; font-weight: 600; display: flex; align-items: center; gap: 8px; }
+  .panel-body { padding: 18px; }
+
+  textarea, input[type=text] {
+    width: 100%; background: #1e2235; border: 1px solid #3d4266; border-radius: 8px;
+    color: #e2e8f0; padding: 10px 12px; font-family: 'Menlo', monospace; font-size: 13px;
+    outline: none; resize: vertical;
+  }
+  textarea:focus, input[type=text]:focus { border-color: #7c3aed; }
+  .field-label { font-size: 12px; color: #94a3b8; margin-bottom: 6px; display: block; }
+
+  button { cursor: pointer; border: none; border-radius: 8px; font-size: 13px; font-weight: 600; padding: 8px 20px; transition: opacity .15s; }
+  button:hover { opacity: .85; }
+  .btn-run { background: #7c3aed; color: #fff; }
+  .btn-clear { background: #2d3148; color: #94a3b8; font-size: 12px; padding: 6px 14px; }
+
+  .status-bar { display: flex; align-items: center; gap: 10px; }
+  .status-badge { font-size: 12px; font-weight: 700; padding: 3px 10px; border-radius: 6px; }
+  .status-2xx { background: #064e3b; color: #34d399; }
+  .status-4xx { background: #450a0a; color: #f87171; }
+  .status-5xx { background: #450a0a; color: #f87171; }
+  .latency { font-size: 12px; color: #64748b; }
+
+  pre { white-space: pre-wrap; word-break: break-word; font-family: 'Menlo', monospace; font-size: 13px; line-height: 1.6; color: #a5f3fc; }
+  .err-text { color: #f87171; }
+
+  .quick-fill { font-size: 11px; color: #7c3aed; cursor: pointer; margin-left: 8px; }
+  .quick-fill:hover { text-decoration: underline; }
+  .row { display: flex; gap: 10px; align-items: flex-start; }
+  .row > * { flex: 1; }
+  .actions { display: flex; gap: 8px; align-items: center; }
+  .divider { height: 1px; background: #2d3148; margin: 14px 0; }
+</style>
+</head>
+<body>
+<header>
+  <h1>🗂 CardTodo API Tester</h1>
+  <span>Cloudflare Worker</span>
+</header>
+<div class="layout">
+  <!-- Sidebar -->
+  <div class="sidebar">
+    <div class="url-bar">
+      <label>Worker Base URL</label>
+      <input type="text" id="baseUrl" placeholder="https://cardtodo-api.YOUR_NAME.workers.dev" value="">
+    </div>
+    <div class="section-title">Endpoints</div>
+    <div class="endpoint active" data-ep="list">
+      <span class="method GET">GET</span>
+      <span class="endpoint-name">List all tasks</span>
+    </div>
+    <div class="endpoint" data-ep="create">
+      <span class="method POST">POST</span>
+      <span class="endpoint-name">Create task</span>
+    </div>
+    <div class="endpoint" data-ep="update">
+      <span class="method PUT">PUT</span>
+      <span class="endpoint-name">Update task</span>
+    </div>
+    <div class="endpoint" data-ep="delete">
+      <span class="method DELETE">DELETE</span>
+      <span class="endpoint-name">Delete task</span>
+    </div>
+    <div class="endpoint" data-ep="bulk">
+      <span class="method DELETE">DELETE</span>
+      <span class="endpoint-name">Clear completed</span>
+    </div>
+    <div class="divider" style="margin:0"></div>
+    <div class="section-title">Quick Tests</div>
+    <div class="endpoint" data-ep="smoke">
+      <span class="method GET">🧪</span>
+      <span class="endpoint-name">Smoke test (全流程)</span>
+    </div>
+  </div>
+
+  <!-- Main -->
+  <div class="main" id="mainPanel"></div>
+</div>
+
+<script>
+const ENDPOINTS = {
+  list: {
+    label: 'GET /tasks — 获取全部任务',
+    method: 'GET',
+    path: '/tasks',
+    hasBody: false,
+  },
+  create: {
+    label: 'POST /tasks — 创建任务',
+    method: 'POST',
+    path: '/tasks',
+    hasBody: true,
+    defaultBody: JSON.stringify({
+      id: genId(),
+      title: '买咖啡',
+      description: '大杯拿铁，少糖',
+      priority: 'HIGH',
+      done: false,
+      createdAt: Date.now()
+    }, null, 2),
+  },
+  update: {
+    label: 'PUT /tasks/:id — 更新任务',
+    method: 'PUT',
+    path: '/tasks/',
+    hasId: true,
+    hasBody: true,
+    defaultBody: JSON.stringify({ done: true }, null, 2),
+  },
+  delete: {
+    label: 'DELETE /tasks/:id — 删除任务',
+    method: 'DELETE',
+    path: '/tasks/',
+    hasId: true,
+    hasBody: false,
+  },
+  bulk: {
+    label: 'DELETE /tasks — 清除所有已完成',
+    method: 'DELETE',
+    path: '/tasks',
+    hasBody: false,
+  },
+  smoke: {
+    label: '🧪 Smoke Test — 全流程自动测试',
+    isSmokeTest: true,
+  },
+};
+
+function genId() {
+  return Date.now().toString(36) + Math.random().toString(36).slice(2);
+}
+
+let currentEp = 'list';
+let lastCreatedId = null;
+
+function baseUrl() {
+  return document.getElementById('baseUrl').value.trim().replace(/\/$/, '');
+}
+
+function renderPanel(epKey) {
+  const ep = ENDPOINTS[epKey];
+  const main = document.getElementById('mainPanel');
+  if (ep.isSmokeTest) {
+    main.innerHTML = `
+      <div class="panel">
+        <div class="panel-header">
+          <div class="panel-title">🧪 Smoke Test — 全流程自动测试</div>
+          <div class="actions"><button class="btn-run" id="runSmoke">▶ 开始测试</button></div>
+        </div>
+        <div class="panel-body">
+          <p style="color:#94a3b8;font-size:13px;margin-bottom:16px">自动执行：创建 → 获取列表 → 更新(完成) → 获取确认 → 删除 → 清空已完成</p>
+          <div id="smokeLog" style="min-height:200px"></div>
+        </div>
+      </div>`;
+    document.getElementById('runSmoke').addEventListener('click', runSmokeTest);
+    return;
+  }
+
+  const idField = ep.hasId ? `
+    <div style="margin-bottom:14px">
+      <label class="field-label">Task ID <span class="quick-fill" id="fillId">← 填入上次创建的 ID</span></label>
+      <input type="text" id="taskId" placeholder="task id...">
+    </div>` : '';
+
+  const bodyField = ep.hasBody ? `
+    <div style="margin-bottom:14px">
+      <label class="field-label">Request Body (JSON)</label>
+      <textarea id="reqBody" rows="8">${ep.defaultBody || '{}'}</textarea>
+    </div>` : '';
+
+  main.innerHTML = `
+    <div class="panel">
+      <div class="panel-header">
+        <div class="panel-title">
+          <span class="method ${ep.method}">${ep.method}</span>
+          ${ep.label}
+        </div>
+        <div class="actions">
+          <button class="btn-run" id="runBtn">▶ Send</button>
+        </div>
+      </div>
+      <div class="panel-body">
+        ${idField}${bodyField}
+      </div>
+    </div>
+    <div class="panel" id="responsePanel" style="display:none">
+      <div class="panel-header">
+        <div class="panel-title">Response</div>
+        <div class="status-bar">
+          <span class="status-badge" id="statusBadge"></span>
+          <span class="latency" id="latency"></span>
+          <button class="btn-clear" id="clearBtn">Clear</button>
+        </div>
+      </div>
+      <div class="panel-body">
+        <pre id="responseBody"></pre>
+      </div>
+    </div>`;
+
+  if (ep.hasId) {
+    document.getElementById('fillId').addEventListener('click', () => {
+      if (lastCreatedId) document.getElementById('taskId').value = lastCreatedId;
+      else alert('还没有创建过任务，先跑一次 POST /tasks');
+    });
+  }
+
+  document.getElementById('runBtn').addEventListener('click', () => runEndpoint(epKey));
+  document.getElementById('clearBtn')?.addEventListener('click', () => {
+    document.getElementById('responsePanel').style.display = 'none';
+  });
+
+  // refresh default body for create
+  if (epKey === 'create') {
+    document.getElementById('reqBody').value = JSON.stringify({
+      id: genId(),
+      title: '买咖啡',
+      description: '大杯拿铁，少糖',
+      priority: 'HIGH',
+      done: false,
+      createdAt: Date.now()
+    }, null, 2);
+  }
+}
+
+async function runEndpoint(epKey) {
+  const ep = ENDPOINTS[epKey];
+  const url = baseUrl();
+  if (!url) { alert('请先填写 Worker Base URL'); return; }
+
+  let path = ep.path;
+  if (ep.hasId) {
+    const id = document.getElementById('taskId').value.trim();
+    if (!id) { alert('请填写 Task ID'); return; }
+    path = path + id;
+  }
+
+  const opts = { method: ep.method, headers: {} };
+  if (ep.hasBody) {
+    try {
+      JSON.parse(document.getElementById('reqBody').value);
+    } catch {
+      alert('Body JSON 格式错误'); return;
+    }
+    opts.body = document.getElementById('reqBody').value;
+    opts.headers['Content-Type'] = 'application/json';
+  }
+
+  const t0 = Date.now();
+  let res, data;
+  try {
+    res  = await fetch(url + path, opts);
+    data = await res.text();
+  } catch(e) {
+    showResponse(null, `Network error: ${e.message}`, 0);
+    return;
+  }
+  const ms = Date.now() - t0;
+
+  // capture created id
+  if (epKey === 'create' && res.ok) {
+    try { lastCreatedId = JSON.parse(data).id; } catch {}
+  }
+
+  try { data = JSON.stringify(JSON.parse(data), null, 2); } catch {}
+  showResponse(res.status, data, ms);
+}
+
+function showResponse(status, body, ms) {
+  const panel = document.getElementById('responsePanel');
+  panel.style.display = '';
+  const badge = document.getElementById('statusBadge');
+  if (status === null) {
+    badge.textContent = 'ERROR';
+    badge.className = 'status-badge status-4xx';
+  } else {
+    badge.textContent = status;
+    badge.className = 'status-badge status-' + (status >= 500 ? '5xx' : status >= 400 ? '4xx' : '2xx');
+  }
+  document.getElementById('latency').textContent = ms ? `${ms} ms` : '';
+  const pre = document.getElementById('responseBody');
+  pre.textContent = body;
+  pre.className = (status === null || status >= 400) ? 'err-text' : '';
+}
+
+async function runSmokeTest() {
+  const url = baseUrl();
+  if (!url) { alert('请先填写 Worker Base URL'); return; }
+
+  const log = document.getElementById('smokeLog');
+  log.innerHTML = '';
+
+  function append(icon, msg, sub = '') {
+    const div = document.createElement('div');
+    div.style.cssText = 'margin-bottom:10px;font-size:13px;';
+    div.innerHTML = `<span style="font-size:15px">${icon}</span> <span style="color:#e2e8f0">${msg}</span>${sub ? `<pre style="color:#94a3b8;margin-top:4px;font-size:12px">${sub}</pre>` : ''}`;
+    log.appendChild(div);
+  }
+
+  async function call(method, path, body) {
+    const opts = { method, headers: {} };
+    if (body) { opts.body = JSON.stringify(body); opts.headers['Content-Type'] = 'application/json'; }
+    const t0 = Date.now();
+    const res = await fetch(url + path, opts);
+    const ms  = Date.now() - t0;
+    const data = await res.json();
+    return { status: res.status, data, ms };
+  }
+
+  try {
+    const id = genId();
+
+    // 1. Create
+    append('⏳', 'Creating task...');
+    const c = await call('POST', '/tasks', { id, title: 'Smoke Test Task', description: 'auto-generated', priority: 'HIGH', done: false, createdAt: Date.now() });
+    if (c.status !== 201) throw new Error(`Create failed: ${JSON.stringify(c.data)}`);
+    append('✅', `Created — id: ${id}`, `status ${c.status} · ${c.ms}ms`);
+
+    // 2. List
+    append('⏳', 'Listing tasks...');
+    const l = await call('GET', '/tasks');
+    const found = l.data.find(t => t.id === id);
+    if (!found) throw new Error('Created task not in list');
+    append('✅', `Listed — found ${l.data.length} task(s)`, `status ${l.status} · ${l.ms}ms`);
+
+    // 3. Update (mark done)
+    append('⏳', 'Marking task as done...');
+    const u = await call('PUT', `/tasks/${id}`, { done: true });
+    if (!u.data.ok) throw new Error(`Update failed: ${JSON.stringify(u.data)}`);
+    append('✅', 'Updated (done=true)', `status ${u.status} · ${u.ms}ms`);
+
+    // 4. Verify done
+    append('⏳', 'Verifying done state...');
+    const l2 = await call('GET', '/tasks');
+    const updated = l2.data.find(t => t.id === id);
+    if (!updated?.done) throw new Error('Task not marked done');
+    append('✅', 'Verified done=true', `status ${l2.status} · ${l2.ms}ms`);
+
+    // 5. Delete
+    append('⏳', 'Deleting task...');
+    const d = await call('DELETE', `/tasks/${id}`);
+    if (!d.data.ok) throw new Error(`Delete failed: ${JSON.stringify(d.data)}`);
+    append('✅', 'Deleted', `status ${d.status} · ${d.ms}ms`);
+
+    // 6. Verify gone
+    const l3 = await call('GET', '/tasks');
+    if (l3.data.find(t => t.id === id)) throw new Error('Task still exists after delete');
+    append('✅', 'Verified — task no longer exists', `status ${l3.status} · ${l3.ms}ms`);
+
+    append('🎉', '<strong style="color:#34d399">All tests passed!</strong> Worker is working correctly.');
+
+  } catch(e) {
+    append('❌', `<span style="color:#f87171">Test failed: ${e.message}</span>`);
+  }
+}
+
+// Nav
+document.querySelectorAll('.endpoint').forEach(el => {
+  el.addEventListener('click', () => {
+    document.querySelectorAll('.endpoint').forEach(e => e.classList.remove('active'));
+    el.classList.add('active');
+    currentEp = el.dataset.ep;
+    renderPanel(currentEp);
+  });
+});
+
+renderPanel(currentEp);
+</script>
+</body>
+</html>
