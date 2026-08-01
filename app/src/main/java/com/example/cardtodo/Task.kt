@@ -12,6 +12,7 @@ enum class Priority(val label: String, val order: Int) {
 @Entity(tableName = "tasks")
 data class Task(
     @PrimaryKey(autoGenerate = true) val id: Int = 0,
+    val remoteId: String = "",   // Cloudflare Worker / D1 的唯一 ID
     val title: String,
     val description: String = "",
     val isCompleted: Boolean = false,

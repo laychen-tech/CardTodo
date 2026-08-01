@@ -5,7 +5,6 @@ import kotlinx.coroutines.flow.Flow
 
 @Dao
 interface TaskDao {
-    // 按优先级排序：HIGH(0) > MEDIUM(1) > LOW(2)，完成的任务排后面
     @Query("""
         SELECT * FROM tasks 
         ORDER BY 
@@ -28,4 +27,13 @@ interface TaskDao {
 
     @Delete
     suspend fun delete(task: Task)
+
+    @Query("DELETE FROM tasks")
+    suspend fun deleteAll()
+
+    @Transaction
+    suspend fun replaceAll(tasks: List<Task>) {
+        deleteAll()
+        tasks.forEach { insert(it) }
+    }
 }

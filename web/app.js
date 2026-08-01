@@ -1,44 +1,85 @@
-// ===== Storage =====
-const STORAGE_KEY = 'cardtodo_tasks';
-const THEME_KEY   = 'cardtodo_theme';
+// ===== Config =====
+const API_BASE = 'https://cardtodo.lay-3b4.workers.dev';
 
-function loadTasks() {
-  try { return JSON.parse(localStorage.getItem(STORAGE_KEY)) || []; }
-  catch { return []; }
-}
-function saveTasks(tasks) {
-  localStorage.setItem(STORAGE_KEY, JSON.stringify(tasks));
+const THEME_KEY = 'cardtodo_theme';
+
+// ===== API =====
+async function apiFetch(method, path, body) {
+  const opts = { method, headers: {} };
+  if (body) { opts.body = JSON.stringify(body); opts.headers['Content-Type'] = 'application/json'; }
+  const res = await fetch(API_BASE + path, opts);
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({}));
+    throw new Error(err.error || `HTTP ${res.status}`);
+  }
+  return res.json();
 }
 
-const PRIORITY_ORDER = { HIGH: 0, MEDIUM: 1, LOW: 2 };
-function sortTasks(tasks) {
-  return [...tasks].sort((a, b) => {
-    if (a.done !== b.done) return a.done ? 1 : -1;
-    return (PRIORITY_ORDER[a.priority] ?? 1) - (PRIORITY_ORDER[b.priority] ?? 1);
-  });
-}
+async function apiGetTasks()        { return apiFetch('GET', '/tasks'); }
+async function apiCreateTask(task)  { return apiFetch('POST', '/tasks', task); }
+async function apiUpdateTask(id, patch) { return apiFetch('PUT', `/tasks/${id}`, patch); }
+async function apiDeleteTask(id)    { return apiFetch('DELETE', `/tasks/${id}`); }
 
 function genId() { return Date.now().toString(36) + Math.random().toString(36).slice(2); }
 
 // ===== State =====
-let tasks = sortTasks(loadTasks());
+let tasks = [];
 let currentIndex = 0;
+let loading = false;
 
 // ===== DOM =====
-const cardTrack    = document.getElementById('cardTrack');
-const cardViewport = document.getElementById('cardViewport');
-const counter      = document.getElementById('counter');
-const emptyState   = document.getElementById('emptyState');
-const fabBtn       = document.getElementById('fabBtn');
-const modalOverlay = document.getElementById('modalOverlay');
+const cardTrack       = document.getElementById('cardTrack');
+const cardViewport    = document.getElementById('cardViewport');
+const counter         = document.getElementById('counter');
+const emptyState      = document.getElementById('emptyState');
+const fabBtn          = document.getElementById('fabBtn');
+const modalOverlay    = document.getElementById('modalOverlay');
 const settingsOverlay = document.getElementById('settingsOverlay');
-const cancelBtn    = document.getElementById('cancelBtn');
-const addBtn       = document.getElementById('addBtn');
-const inputTitle   = document.getElementById('inputTitle');
-const inputDesc    = document.getElementById('inputDesc');
-const settingsBtn  = document.getElementById('settingsBtn');
+const cancelBtn       = document.getElementById('cancelBtn');
+const addBtn          = document.getElementById('addBtn');
+const inputTitle      = document.getElementById('inputTitle');
+const inputDesc       = document.getElementById('inputDesc');
+const settingsBtn     = document.getElementById('settingsBtn');
 const settingsCloseBtn = document.getElementById('settingsCloseBtn');
-const darkToggle   = document.getElementById('darkToggle');
+const darkToggle      = document.getElementById('darkToggle');
+
+// ===== Loading overlay =====
+const loadingEl = document.createElement('div');
+loadingEl.id = 'loadingOverlay';
+loadingEl.innerHTML = '<div class="spinner"></div>';
+loadingEl.style.cssText = `
+  display:none;position:fixed;inset:0;background:rgba(0,0,0,.35);
+  z-index:9999;align-items:center;justify-content:center;
+`;
+document.body.appendChild(loadingEl);
+
+const spinnerStyle = document.createElement('style');
+spinnerStyle.textContent = `
+  .spinner{width:36px;height:36px;border:3px solid rgba(255,255,255,.2);
+    border-top-color:#fff;border-radius:50%;animation:spin .7s linear infinite;}
+  @keyframes spin{to{transform:rotate(360deg)}}
+  #syncStatus{position:fixed;bottom:80px;left:50%;transform:translateX(-50%);
+    font-size:12px;color:#94a3b8;pointer-events:none;opacity:0;transition:opacity .3s;}
+  #syncStatus.show{opacity:1;}
+`;
+document.head.appendChild(spinnerStyle);
+
+function showLoading(v) {
+  loadingEl.style.display = v ? 'flex' : 'none';
+}
+
+// sync status toast
+const syncStatus = document.createElement('div');
+syncStatus.id = 'syncStatus';
+document.body.appendChild(syncStatus);
+let syncTimer;
+function showSync(msg, isErr = false) {
+  syncStatus.textContent = msg;
+  syncStatus.style.color = isErr ? '#f87171' : '#94a3b8';
+  syncStatus.classList.add('show');
+  clearTimeout(syncTimer);
+  syncTimer = setTimeout(() => syncStatus.classList.remove('show'), 2000);
+}
 
 // ===== Theme =====
 function applyTheme(dark) {
@@ -48,7 +89,6 @@ function applyTheme(dark) {
   localStorage.setItem(THEME_KEY, dark ? 'dark' : 'light');
 }
 applyTheme(localStorage.getItem(THEME_KEY) === 'dark');
-
 darkToggle.addEventListener('change', () => applyTheme(darkToggle.checked));
 
 // ===== Priority Selector =====
@@ -62,6 +102,14 @@ document.querySelectorAll('.priority-btn').forEach(btn => {
 });
 
 // ===== Render =====
+const PRIORITY_ORDER = { HIGH: 0, MEDIUM: 1, LOW: 2 };
+function sortTasks(list) {
+  return [...list].sort((a, b) => {
+    if (a.done !== b.done) return a.done ? 1 : -1;
+    return (PRIORITY_ORDER[a.priority] ?? 1) - (PRIORITY_ORDER[b.priority] ?? 1);
+  });
+}
+
 function priorityLabel(p) {
   return { HIGH: '🔴 高优先级', MEDIUM: '🟡 中优先级', LOW: '🟢 低优先级' }[p] || '🟡 中优先级';
 }
@@ -78,17 +126,15 @@ function render() {
   cardTrack.innerHTML = '';
 
   const isEmpty = tasks.length === 0;
-  emptyState.style.display  = isEmpty ? 'flex' : 'none';
+  emptyState.style.display   = isEmpty ? 'flex' : 'none';
   cardViewport.style.display = isEmpty ? 'none' : 'block';
   counter.style.display      = isEmpty ? 'none' : 'block';
 
   if (isEmpty) { updateDots(); return; }
-
   if (currentIndex >= tasks.length) currentIndex = tasks.length - 1;
 
-  // 计算 slide 宽度
   const vw = window.innerWidth;
-  const slideW = Math.min(vw - 28, 480);  // max 480px
+  const slideW = Math.min(vw - 28, 480);
   const sideVisible = (vw - slideW) / 2;
   cardViewport.style.height = '460px';
 
@@ -122,7 +168,6 @@ function render() {
     cardTrack.appendChild(slide);
   });
 
-  // 设置 track 宽度和偏移
   cardTrack.style.width = (slideW * tasks.length) + 'px';
   const offset = currentIndex * slideW - sideVisible + 14;
   cardTrack.style.transform = `translateX(${-offset}px)`;
@@ -156,31 +201,61 @@ function updateDots() {
 // ===== Card Events =====
 function bindCardEvents() {
   document.querySelectorAll('.btn-complete').forEach(btn => {
-    btn.addEventListener('click', e => {
+    btn.addEventListener('click', async e => {
       e.stopPropagation();
       const id = btn.dataset.id;
+      const task = tasks.find(t => t.id === id);
+      if (!task) return;
+      // optimistic update
       tasks = tasks.map(t => t.id === id ? {...t, done: !t.done} : t);
-      saveTasks(tasks);
       render();
+      try {
+        await apiUpdateTask(id, { done: !task.done });
+        showSync('已同步');
+      } catch(err) {
+        // rollback
+        tasks = tasks.map(t => t.id === id ? {...t, done: task.done} : t);
+        render();
+        showSync('同步失败', true);
+      }
     });
   });
+
   document.querySelectorAll('.btn-delete').forEach(btn => {
-    btn.addEventListener('click', e => {
+    btn.addEventListener('click', async e => {
       e.stopPropagation();
       const id = btn.dataset.id;
+      const backup = [...tasks];
       tasks = tasks.filter(t => t.id !== id);
       if (currentIndex >= tasks.length && currentIndex > 0) currentIndex--;
-      saveTasks(tasks);
       render();
+      try {
+        await apiDeleteTask(id);
+        showSync('已删除');
+      } catch(err) {
+        tasks = backup;
+        render();
+        showSync('删除失败', true);
+      }
     });
   });
+
   document.querySelectorAll('.status-icon').forEach(icon => {
-    icon.addEventListener('click', e => {
+    icon.addEventListener('click', async e => {
       e.stopPropagation();
       const id = icon.dataset.id;
+      const task = tasks.find(t => t.id === id);
+      if (!task) return;
       tasks = tasks.map(t => t.id === id ? {...t, done: !t.done} : t);
-      saveTasks(tasks);
       render();
+      try {
+        await apiUpdateTask(id, { done: !task.done });
+        showSync('已同步');
+      } catch {
+        tasks = tasks.map(t => t.id === id ? {...t, done: task.done} : t);
+        render();
+        showSync('同步失败', true);
+      }
     });
   });
 }
@@ -220,7 +295,6 @@ cardViewport.addEventListener('mousedown', onPointerDown);
 cardViewport.addEventListener('mousemove', onPointerMove);
 cardViewport.addEventListener('mouseup', onPointerUp);
 
-// 键盘左右
 document.addEventListener('keydown', e => {
   if (e.key === 'ArrowRight' && currentIndex < tasks.length - 1) { currentIndex++; render(); }
   if (e.key === 'ArrowLeft'  && currentIndex > 0)                { currentIndex--; render(); }
@@ -239,10 +313,11 @@ fabBtn.addEventListener('click', () => {
 cancelBtn.addEventListener('click', () => modalOverlay.classList.remove('open'));
 modalOverlay.addEventListener('click', e => { if (e.target === modalOverlay) modalOverlay.classList.remove('open'); });
 
-addBtn.addEventListener('click', () => {
+addBtn.addEventListener('click', async () => {
   const title = inputTitle.value.trim();
   if (!title) { inputTitle.style.borderColor = '#E53935'; inputTitle.focus(); return; }
   inputTitle.style.borderColor = '';
+
   const task = {
     id: genId(),
     title,
@@ -251,12 +326,22 @@ addBtn.addEventListener('click', () => {
     done: false,
     createdAt: Date.now()
   };
+
+  // optimistic
   tasks.push(task);
-  saveTasks(tasks);
   tasks = sortTasks(tasks);
   currentIndex = tasks.findIndex(t => t.id === task.id);
   modalOverlay.classList.remove('open');
   render();
+
+  try {
+    await apiCreateTask(task);
+    showSync('已同步');
+  } catch(err) {
+    tasks = tasks.filter(t => t.id !== task.id);
+    render();
+    showSync('创建失败，请重试', true);
+  }
 });
 
 inputTitle.addEventListener('keydown', e => { if (e.key === 'Enter') addBtn.click(); });
@@ -266,5 +351,27 @@ settingsBtn.addEventListener('click', () => settingsOverlay.classList.add('open'
 settingsCloseBtn.addEventListener('click', () => settingsOverlay.classList.remove('open'));
 settingsOverlay.addEventListener('click', e => { if (e.target === settingsOverlay) settingsOverlay.classList.remove('open'); });
 
-// ===== Init =====
-render();
+// ===== Init: load from API =====
+async function loadTasks() {
+  showLoading(true);
+  try {
+    const data = await apiGetTasks();
+    tasks = data.map(t => ({
+      id:          t.id,
+      title:       t.title,
+      description: t.description || '',
+      priority:    t.priority,
+      done:        t.done,
+      createdAt:   t.createdAt,
+    }));
+    currentIndex = 0;
+    render();
+  } catch(err) {
+    showSync('加载失败，请检查网络', true);
+    render();
+  } finally {
+    showLoading(false);
+  }
+}
+
+loadTasks();
